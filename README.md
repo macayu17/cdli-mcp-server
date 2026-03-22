@@ -1,8 +1,8 @@
 <h1 align="center">CDLI MCP Server</h1>
 
 <p align="center">
-  <strong>Model Context Protocol server for the Cuneiform Digital Library Initiative</strong><br>
-  <em>AI-powered research tools for cuneiform scholarship via Claude Desktop</em>
+  <strong>Model Context Protocol Server for the Cuneiform Digital Library Initiative</strong><br>
+  <em>Providing structured access to the CDLI corpus via MCP</em>
 </p>
 
 <p align="center">
@@ -35,12 +35,12 @@ This server connects to the CDLI public REST API and allows any MCP-compatible c
 
 ### How Data Flows
 
-1. You ask Claude: *"Find Sumerian administrative tablets about barley from Ur III period"*
-2. Claude analyzes your request and calls the `advanced_search` tool with `{ language: "Sumerian", genre: "Administrative", period: "Ur III", translation_text: "barley" }`
-3. Our MCP server translates those parameters into CDLI URL query strings
-4. The CDLI website queries its MariaDB database and returns HTML/JSON
-5. Our server parses the response, enriches it with metadata, and returns formatted text
-6. Claude reads the results and presents them to you with citations
+1. A client submits a natural language request (e.g., *"Find Sumerian administrative tablets about barley from Ur III period"*).
+2. The client analyzes the request and invokes the `advanced_search` tool with `{ language: "Sumerian", genre: "Administrative", period: "Ur III", translation_text: "barley" }`.
+3. The MCP server translates these parameters into CDLI URL query parameters.
+4. The CDLI website processes the query and returns the relevant data.
+5. The server parses the response, enriches it with metadata, and returns formatted text.
+6. The client reads the results and presents them with standard citations.
 
 ---
 
@@ -239,11 +239,11 @@ If you already have a config file with other settings, **merge** the `mcpServers
 
 Look for the **🔧 hammer icon** next to the text input. Click it to see the 11 CDLI tools listed.
 
-### Step 6: Start Researching!
+### Step 6: Usage Examples
 
-Try these prompts:
+Here are some example prompts that can be used with an MCP client (such as Claude Desktop):
 
-| Prompt | Tools Used |
+| Example Prompt | Tool Executed |
 |--------|-----------|
 | *"Search CDLI for Sumerian administrative tablets about barley"* | `search_artifacts` |
 | *"Find Old Babylonian literary texts from Nippur"* | `advanced_search` |

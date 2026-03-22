@@ -1,7 +1,7 @@
 {
   "name": "cdli-mcp-server",
   "version": "1.0.0",
-  "description": "MCP Server for the Cuneiform Digital Library Initiative (CDLI) — exposes CDLI data as structured tools for AI agents via Claude Desktop",
+  "description": "MCP Server for the Cuneiform Digital Library Initiative (CDLI). Exposes the CDLI corpus as structured tools via the Model Context Protocol.",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
