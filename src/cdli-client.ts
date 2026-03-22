@@ -244,8 +244,10 @@ export async function advancedSearch(params: Record<string, string>, page: numbe
  * Maps to https://cdli.earth/cqp4rdf/
  */
 export async function cqpQuery(query: string): Promise<any> {
-  // The CQP4RDF endpoint accepts a query parameter
-  return await fetchJSON<any>('/cqp4rdf/', {
-    query: query,
+  // Use the internal JSON API endpoint that powers the CQP4RDF frontend
+  return await fetchJSON<any>('/cqp4rdf/api/query', {
+    cqp: query,
+    page: '1',
+    corpus: 'cdli'
   });
 }

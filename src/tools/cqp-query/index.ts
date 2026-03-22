@@ -96,13 +96,13 @@ export async function handler(args: { query: string }): Promise<string> {
 
     results.push('\n---');
     results.push('CQP4RDF endpoint: https://cdli.earth/cqp4rdf/');
-    results.push('Use `get_artifact` to fetch full metadata for any matched artifact.');
+    results.push('Use `get_artifact` to fetch full metadata for any matched artifact if you find IDs (P-numbers) in the text.');
 
     return results.join('\n');
   } catch (error) {
     if (error instanceof CDLIError) {
       return `CQP query failed: ${error.message}\n\n` +
-        'The CQP4RDF endpoint may be temporarily unavailable. ' +
+        'The CQP4RDF endpoint may be temporarily unavailable or rejecting queries. ' +
         'You can try the query directly at: https://cdli.earth/cqp4rdf/\n\n' +
         'Common CQP syntax:\n' +
         '- [lemma="word"] — Search by lemma\n' +
