@@ -1,0 +1,37 @@
+{
+  "name": "cdli-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP Server for the Cuneiform Digital Library Initiative (CDLI) — exposes CDLI data as structured tools for AI agents via Claude Desktop",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "cdli-mcp-server": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "start:sse": "node dist/index.js --sse",
+    "dev": "tsc && node dist/index.js",
+    "dev:sse": "tsc && node dist/index.js --sse",
+    "inspect": "tsc && npx @modelcontextprotocol/inspector node dist/index.js"
+  },
+  "keywords": [
+    "cdli",
+    "mcp",
+    "cuneiform",
+    "ai",
+    "claude",
+    "model-context-protocol"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "express": "^5.2.1",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0"
+  }
+}
