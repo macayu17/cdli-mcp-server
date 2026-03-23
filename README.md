@@ -138,7 +138,7 @@ Opens a web UI at `http://localhost:6274` where you can test each tool individua
 
 ## SSE Transport
 
-![CDLI MCP - SSE Transport Layer Architecture]<img width="1740" height="1264" alt="SSE Architecture updated" src="https://github.com/user-attachments/assets/539296b6-a51d-44a8-8d63-639733338495" />
+<img width="1760" height="1268" alt="SSE Architecture updated" src="https://github.com/user-attachments/assets/b1f794b4-a7b1-4062-84cc-24f0dbb78daf" />
 
 The SSE transport exposes the MCP server over HTTP, allowing web-based clients to connect.
 
