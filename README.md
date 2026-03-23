@@ -31,7 +31,7 @@ This server connects to the CDLI public REST API and allows any MCP-compatible c
 
 ## Architecture
 
-![CDLI MCP Server Architecture](assets/architecture.png)
+<img width="780" height="823" alt="stdio architecture" src="https://github.com/user-attachments/assets/bfd31f24-7a6f-4825-80a2-9e9fb47ac1ee" />
 
 ### How Data Flows
 
