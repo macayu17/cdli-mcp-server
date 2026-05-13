@@ -3,7 +3,7 @@
  */
 
 import { z } from 'zod';
-import { listArtifacts, CDLIError } from '../../cdli-client.js';
+import { listArtifacts, CDLIError, toPositiveInteger } from '../../cdli-client.js';
 
 export const name = 'list_artifacts';
 
@@ -19,8 +19,8 @@ export const inputSchema = {
 
 export async function handler(args: { page?: number; per_page?: number }): Promise<string> {
   try {
-    const page = args.page || 1;
-    const perPage = Math.min(args.per_page || 20, 50);
+    const page = toPositiveInteger(args.page, 1);
+    const perPage = Math.min(toPositiveInteger(args.per_page, 20), 50);
     const data = await listArtifacts(page, perPage);
 
     if (!data || (Array.isArray(data) && data.length === 0)) {

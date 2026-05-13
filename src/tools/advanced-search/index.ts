@@ -7,7 +7,7 @@
  */
 
 import { z } from 'zod';
-import { advancedSearch, getArtifact, CDLIError } from '../../cdli-client.js';
+import { advancedSearch, getArtifact, CDLIError, extractArtifactIdsFromHtml } from '../../cdli-client.js';
 
 export const name = 'advanced_search';
 
@@ -47,18 +47,13 @@ export async function handler(args: {
 }): Promise<string> {
   try {
     // Build the search parameters from provided fields
-    const searchParams: Record<string, string> = {};
-
-    if (args.keyword) searchParams['query'] = args.keyword;
-    if (args.language) searchParams['language'] = args.language;
-    if (args.genre) searchParams['genre'] = args.genre;
-    if (args.period) searchParams['period'] = args.period;
-    if (args.provenience) searchParams['provenience'] = args.provenience;
-    if (args.material) searchParams['material'] = args.material;
-    if (args.collection) searchParams['collection'] = args.collection;
-    if (args.artifact_type) searchParams['artifact_type'] = args.artifact_type;
-    if (args.translation_text) searchParams['translation'] = args.translation_text;
-    if (args.publication) searchParams['publication'] = args.publication;
+    const searchParams = Object.fromEntries(
+      Object.entries(args).filter(([key, value]) => (
+        key !== 'page' &&
+        typeof value === 'string' &&
+        value.trim().length > 0
+      ))
+    ) as Record<string, string>;
 
     // Check that at least one field is provided
     if (Object.keys(searchParams).length === 0) {
@@ -70,8 +65,7 @@ export async function handler(args: {
     const html = await advancedSearch(searchParams, args.page || 1);
 
     // Extract artifact IDs from the HTML response
-    const artifactMatches = [...html.matchAll(/\/artifacts\/(\d+)['"]/g)];
-    const uniqueIds = [...new Set(artifactMatches.map(m => parseInt(m[1])))].slice(0, 20);
+    const uniqueIds = extractArtifactIdsFromHtml(html).slice(0, 20);
 
     if (uniqueIds.length === 0) {
       // Build a summary of the search filters used

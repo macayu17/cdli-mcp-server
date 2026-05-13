@@ -3,7 +3,7 @@
  */
 
 import { z } from 'zod';
-import { listPublications, CDLIError } from '../../cdli-client.js';
+import { listPublications, CDLIError, toPositiveInteger } from '../../cdli-client.js';
 
 export const name = 'get_publications';
 
@@ -14,20 +14,20 @@ export const description =
 
 export const inputSchema = {
   page: z.number().optional().describe('Page number (default: 1)'),
-  per_page: z.number().optional().describe('Results per page (default: 20)'),
+  per_page: z.number().optional().describe('Results per page (default: 20, max: 100)'),
 };
 
 export async function handler(args: { page?: number; per_page?: number }): Promise<string> {
   try {
-    const page = args.page || 1;
-    const perPage = args.per_page || 20;
+    const page = toPositiveInteger(args.page, 1);
+    const perPage = Math.min(toPositiveInteger(args.per_page, 20), 100);
     const data = await listPublications(page, perPage);
 
     if (!data || (Array.isArray(data) && data.length === 0)) {
       return 'No publications found on this page.';
     }
 
-    const pubs = Array.isArray(data) ? data : [data];
+    const pubs = (Array.isArray(data) ? data : [data]).slice(0, perPage);
     const lines: string[] = [];
     lines.push(`## CDLI Publications — Page ${page}\n`);
 

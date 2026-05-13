@@ -5,7 +5,7 @@
  * Endpoints used:
  *   - /artifacts/{id}/json — Single artifact metadata
  *   - /artifacts/{id}/inscription/atf — ATF transliteration text
- *   - /search/search_results — ElasticSearch full-text search
+ *   - /search — CDLI search results
  *   - /authors.json — Author listing
  *   - /publications.json — Publication listing
  *   - /periods.json — Historical periods
@@ -14,6 +14,61 @@
 
 const BASE_URL = process.env.CDLI_API_BASE_URL || 'https://cdli.earth';
 const TIMEOUT = parseInt(process.env.CDLI_API_TIMEOUT || '30000', 10);
+
+// ─── URL/Search Helpers ──────────────────────────────────────────────
+
+export function toPositiveInteger(value: unknown, fallback: number): number {
+  const parsed = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(parsed) || parsed < 1) return fallback;
+  return Math.floor(parsed);
+}
+
+export function extractArtifactIdsFromHtml(html: string): number[] {
+  const matches = [...html.matchAll(/\/artifacts\/(\d+)(?=[/?#'"]|$)/g)];
+  return [...new Set(matches.map((match) => Number(match[1])))];
+}
+
+export function buildSimpleSearchParams(query: string, page: number = 1): Record<string, string> {
+  return {
+    'simple-value[]': query.trim(),
+    'simple-field[]': 'keyword',
+    page: String(toPositiveInteger(page, 1)),
+  };
+}
+
+const ADVANCED_SEARCH_FIELD_MAP: Record<string, string> = {
+  language: 'language',
+  genre: 'genre',
+  period: 'period',
+  provenience: 'provenience',
+  material: 'material',
+  collection: 'collection',
+  artifact_type: 'artifact_type',
+  translation_text: 'atf_translation_text',
+  publication: 'publication_designation',
+};
+
+export function buildAdvancedSearchParams(
+  params: Record<string, string>,
+  page: number = 1,
+): Record<string, string> {
+  const searchParams: Record<string, string> = {
+    page: String(toPositiveInteger(page, 1)),
+  };
+
+  const keyword = params.keyword?.trim();
+  if (keyword) {
+    searchParams['simple-value[]'] = keyword;
+    searchParams['simple-field[]'] = 'keyword';
+  }
+
+  for (const [sourceKey, targetKey] of Object.entries(ADVANCED_SEARCH_FIELD_MAP)) {
+    const value = params[sourceKey]?.trim();
+    if (value) searchParams[targetKey] = value;
+  }
+
+  return searchParams;
+}
 
 // ─── Custom Errors ────────────────────────────────────────────────────
 
@@ -160,10 +215,18 @@ export async function getArtifact(id: number): Promise<any> {
  * List artifacts with pagination
  */
 export async function listArtifacts(page: number = 1, perPage: number = 20): Promise<any> {
-  return await fetchJSON<any>(`/artifacts.json`, {
-    page: String(page),
-    per_page: String(perPage),
-  });
+  const safePage = toPositiveInteger(page, 1);
+  const safePerPage = Math.min(toPositiveInteger(perPage, 20), 50);
+  const html = await fetchHTML('/artifacts', { page: String(safePage) });
+  const ids = extractArtifactIdsFromHtml(html).slice(0, safePerPage);
+
+  return await Promise.all(ids.map(async (id) => {
+    try {
+      return await getArtifact(id) || { id };
+    } catch {
+      return { id };
+    }
+  }));
 }
 
 /**
@@ -171,10 +234,7 @@ export async function listArtifacts(page: number = 1, perPage: number = 20): Pro
  */
 export async function searchArtifacts(query: string, page: number = 1): Promise<string> {
   // The search endpoint returns HTML; we parse it for artifact links
-  const html = await fetchHTML('/search/search_results', {
-    'SearchSettings[query]': query,
-    page: String(page),
-  });
+  const html = await fetchHTML('/search', buildSimpleSearchParams(query, page));
   return html;
 }
 
@@ -227,16 +287,7 @@ export async function listProveniences(page: number = 1, perPage: number = 50): 
  * Maps to https://cdli.earth/search/advanced
  */
 export async function advancedSearch(params: Record<string, string>, page: number = 1): Promise<string> {
-  const searchParams: Record<string, string> = { page: String(page) };
-
-  // Map structured fields to CDLI SearchSettings format
-  for (const [key, value] of Object.entries(params)) {
-    if (value && value.trim()) {
-      searchParams[`SearchSettings[${key}]`] = value.trim();
-    }
-  }
-
-  return await fetchHTML('/search/search_results', searchParams);
+  return await fetchHTML('/search', buildAdvancedSearchParams(params, page));
 }
 
 /**

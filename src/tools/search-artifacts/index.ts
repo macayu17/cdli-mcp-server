@@ -5,7 +5,7 @@
  */
 
 import { z } from 'zod';
-import { searchArtifacts, getArtifact, CDLIError } from '../../cdli-client.js';
+import { searchArtifacts, getArtifact, CDLIError, extractArtifactIdsFromHtml } from '../../cdli-client.js';
 
 export const name = 'search_artifacts';
 
@@ -25,8 +25,7 @@ export async function handler(args: { query: string; page?: number }): Promise<s
     const html = await searchArtifacts(args.query, args.page || 1);
     
     // Extract artifact IDs and names from the HTML response
-    const artifactMatches = [...html.matchAll(/\/artifacts\/(\d+)['"]/g)];
-    const uniqueIds = [...new Set(artifactMatches.map(m => parseInt(m[1])))].slice(0, 20);
+    const uniqueIds = extractArtifactIdsFromHtml(html).slice(0, 20);
 
     if (uniqueIds.length === 0) {
       return `No artifacts found for query: "${args.query}"\n\n` +

@@ -3,7 +3,7 @@
  */
 
 import { z } from 'zod';
-import { listProveniences, CDLIError } from '../../cdli-client.js';
+import { listProveniences, CDLIError, toPositiveInteger } from '../../cdli-client.js';
 
 export const name = 'get_proveniences';
 
@@ -14,20 +14,20 @@ export const description =
 
 export const inputSchema = {
   page: z.number().optional().describe('Page number (default: 1)'),
-  per_page: z.number().optional().describe('Results per page (default: 50)'),
+  per_page: z.number().optional().describe('Results per page (default: 50, max: 100)'),
 };
 
 export async function handler(args: { page?: number; per_page?: number }): Promise<string> {
   try {
-    const page = args.page || 1;
-    const perPage = args.per_page || 50;
+    const page = toPositiveInteger(args.page, 1);
+    const perPage = Math.min(toPositiveInteger(args.per_page, 50), 100);
     const data = await listProveniences(page, perPage);
 
     if (!data || (Array.isArray(data) && data.length === 0)) {
       return 'No proveniences found on this page.';
     }
 
-    const provs = Array.isArray(data) ? data : [data];
+    const provs = (Array.isArray(data) ? data : [data]).slice(0, perPage);
     const lines: string[] = [];
     lines.push(`## CDLI Proveniences — Page ${page}\n`);
 

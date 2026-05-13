@@ -1,379 +1,256 @@
-<h1 align="center">CDLI MCP Server</h1>
+# CDLI MCP Server
 
-<p align="center">
-  <strong>Model Context Protocol Server for the Cuneiform Digital Library Initiative</strong><br>
-  <em>Providing structured access to the CDLI corpus via MCP</em>
-</p>
+This project is a Model Context Protocol server for the Cuneiform Digital Library Initiative (CDLI). It lets MCP clients such as Claude Desktop query the public CDLI catalog through a small set of tools for search, artifact metadata, inscriptions, publications, periods, proveniences, and basic server health checks.
 
-<p align="center">
-  <a href="https://cdli.earth">CDLI Website</a> •
-  <a href="#available-tools-11">Tools (11)</a> •
-  <a href="#claude-desktop-setup">Setup Guide</a> •
-  <a href="#architecture">Architecture</a>
-</p>
+The server is intentionally simple. It does not store CDLI data locally. Each tool makes a request to `https://cdli.earth`, normalizes the response, and returns text that is easier for an MCP client to use in a conversation.
 
----
+## What It Provides
 
-## Overview
+- `stdio` transport for local desktop MCP clients.
+- SSE transport for HTTP-based MCP clients and simple health checks.
+- Eleven registered MCP tools.
+- Typed TypeScript source with a small Node test suite.
+- Bounded output for list tools so the client does not receive unexpectedly large responses.
+- CDLI artifact links and citation-friendly P-numbers in tool output.
 
-A [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server that exposes the full [CDLI (Cuneiform Digital Library Initiative)](https://cdli.earth) corpus as structured tools for AI agents.
+## Project Layout
 
-This server connects to the CDLI public REST API and allows any MCP-compatible client (like **Claude Desktop**) to:
-- **Search** the corpus with free-text or structured metadata queries
-- **Read** cuneiform inscriptions in ATF transliteration format
-- **Browse** artifacts, authors, publications, periods, and proveniences
-- **Execute** CQP linguistic queries via the CQP4RDF system
-- **Generate** research with automatic artifact citations
-
-**Transport:** `stdio` (Claude Desktop) and `SSE` (web-based MCP clients)
-
----
-
-## Architecture
-
-<img width="780" height="823" alt="stdio architecture" src="https://github.com/user-attachments/assets/bfd31f24-7a6f-4825-80a2-9e9fb47ac1ee" />
-
-### How Data Flows
-
-1. A client submits a natural language request (e.g., *"Find Sumerian administrative tablets about barley from Ur III period"*).
-2. The client analyzes the request and invokes the `advanced_search` tool with `{ language: "Sumerian", genre: "Administrative", period: "Ur III", translation_text: "barley" }`.
-3. The MCP server translates these parameters into CDLI URL query parameters.
-4. The CDLI website processes the query and returns the relevant data.
-5. The server parses the response, enriches it with metadata, and returns formatted text.
-6. The client reads the results and presents them with standard citations.
-
----
-
-## Available Tools (11)
-
-### Artifact Discovery
-
-| Tool | Description |
-|------|-------------|
-| `search_artifacts` | Free-text search across the CDLI corpus. Good for general keyword queries. |
-| `advanced_search` | **Structured search** with specific filters: language, genre, period, provenience, material, collection, artifact_type, translation_text, publication. Maps to [CDLI Advanced Search](https://cdli.earth/search/advanced). |
-| `get_artifact` | Retrieve full metadata for a single artifact by P-number. Includes publications, collections, materials, and inscription. |
-| `list_artifacts` | Paginated browsing of the artifact catalog. |
-
-### Inscription & Linguistic Analysis
-
-| Tool | Description |
-|------|-------------|
-| `get_inscription` | Retrieve ATF (ASCII Transliteration Format) text for an artifact. Includes transliteration lines and English translations. |
-| `cqp_query` | Execute **CQP (Corpus Query Processor)** linguistic queries via the [CQP4RDF](https://cdli.earth/cqp4rdf/) system. Supports lemma, form, and part-of-speech searches. |
-
-### Scholarly Data
-
-| Tool | Description |
-|------|-------------|
-| `get_authors` | List authors/scholars registered in CDLI (2,700+). |
-| `get_publications` | Browse publications referenced by CDLI artifacts. |
-
-### Historical & Geographic Context
-
-| Tool | Description |
-|------|-------------|
-| `get_periods` | All 32 historical periods with chronological sequence. |
-| `get_proveniences` | Archaeological find sites (e.g., Ur, Nippur, Girsu). |
-
-### System
-
-| Tool | Description |
-|------|-------------|
-| `ping` | Server liveness check with version info. |
-
----
-
-## Quick Start
-
-### Prerequisites
-
-- **Node.js** ≥ 18 ([download](https://nodejs.org/))
-- **npm** ≥ 9 (included with Node.js)
-- **Claude Desktop** app ([download](https://claude.ai/download))
-
-### 1. Clone & Install
-
-```bash
-git clone <your-repo-url>
-cd cdli-ai-prototype
-
-npm install
+```text
+cdli-mcp-server/
+  src/
+    index.ts                       Server entry point and transport setup
+    cdli-client.ts                 HTTP client and CDLI URL helpers
+    tools/
+      index.ts                     Tool registry
+      search-artifacts/index.ts    Free-text catalog search
+      advanced-search/index.ts     Structured catalog search
+      get-artifact/index.ts        Full artifact metadata
+      list-artifacts/index.ts      Browse artifact result pages
+      get-inscription/index.ts     ATF transliteration and translations
+      get-authors/index.ts         CDLI author list
+      get-publications/index.ts    Publication list
+      get-periods/index.ts         Historical periods
+      get-proveniences/index.ts    Provenience list
+      cqp-query/index.ts           CQP4RDF query wrapper
+      ping/index.ts                Health check tool
+  test/
+    cdli-client.test.mjs           Search URL and parsing tests
+  assets/
+    sse_architecture.png
+  package.json
+  tsconfig.json
+  README.md
 ```
 
-### 2. Build
+## Requirements
+
+- Node.js 18 or newer
+- npm 9 or newer
+- An MCP client if you want to use the server from a desktop app
+
+## Setup
 
 ```bash
+git clone https://github.com/macayu17/cdli-mcp-server.git
+cd cdli-mcp-server
+npm install
 npm run build
 ```
 
-This compiles TypeScript from `src/` into `dist/`.
+Run the automated checks:
 
-### 3. Run
+```bash
+npm test
+```
 
-**stdio mode** (default — for Claude Desktop):
+Check production dependency advisories:
+
+```bash
+npm audit --omit=dev
+```
+
+## Running The Server
+
+For a local MCP client such as Claude Desktop:
+
 ```bash
 npm start
 ```
 
-**SSE mode** (for web-based MCP clients):
+For HTTP/SSE clients:
+
 ```bash
 npm run start:sse
 ```
 
-The SSE server starts on port `3000` by default. Use a custom port:
+The SSE server uses port `3000` by default. To use a different port:
+
 ```bash
 node dist/index.js --sse 8080
 ```
 
-### 4. Test with MCP Inspector (Optional)
+SSE endpoints:
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `GET` | `/sse` | Opens the SSE event stream and creates a session |
+| `POST` | `/messages?sessionId=<id>` | Sends JSON-RPC messages for the active session |
+| `GET` | `/health` | Returns server status, version, and tool count |
+
+Health check example:
 
 ```bash
-npm run inspect
-```
-
-Opens a web UI at `http://localhost:6274` where you can test each tool individually.
-
----
-
-## SSE Transport
-
-<img width="1760" height="1268" alt="SSE Architecture updated" src="https://github.com/user-attachments/assets/b1f794b4-a7b1-4062-84cc-24f0dbb78daf" />
-
-The SSE transport exposes the MCP server over HTTP, allowing web-based clients to connect.
-
-### Endpoints
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/sse` | Establish an SSE event stream. Returns a `sessionId` in the initial event. |
-| `POST` | `/messages?sessionId=<id>` | Send JSON-RPC messages to the server using the session ID from `/sse`. |
-| `GET` | `/health` | Health check. Returns server status, version, and tool count. |
-
-### Connection Flow
-
-1. Client sends `GET /sse` to open an event stream
-2. Server responds with a `sessionId` in the first SSE event
-3. Client sends JSON-RPC tool calls via `POST /messages?sessionId=<id>`
-4. Server streams responses back over the SSE connection
-
-### Example
-
-```bash
-# Start SSE server
-npm run start:sse
-
-# In another terminal, check health
 curl http://localhost:3000/health
 ```
 
----
+## Claude Desktop Configuration
 
-## Claude Desktop Setup
-
-### Step 1: Build the Server
+Build the server first:
 
 ```bash
-cd /path/to/cdli-ai-prototype
 npm install
 npm run build
 ```
 
-### Step 2: Open Claude Desktop Config
+Then add this server to the Claude Desktop config file.
 
-The config file location depends on your OS:
+Common config locations:
 
 | OS | Path |
-|----|------|
-| **Windows** | `%APPDATA%\Claude\claude_desktop_config.json` |
-| **macOS** | `~/Library/Application Support/Claude/claude_desktop_config.json` |
-| **Linux** | `~/.config/Claude/claude_desktop_config.json` |
+| --- | --- |
+| Windows | `%APPDATA%\Claude\claude_desktop_config.json` |
+| macOS | `~/Library/Application Support/Claude/claude_desktop_config.json` |
+| Linux | `~/.config/Claude/claude_desktop_config.json` |
 
-On Windows, open it with:
-```cmd
-notepad %APPDATA%\Claude\claude_desktop_config.json
-```
-
-### Step 3: Add the CDLI MCP Server
-
-If you already have a config file with other settings, **merge** the `mcpServers` block into it:
+Example config:
 
 ```json
 {
   "mcpServers": {
     "cdli": {
       "command": "node",
-      "args": ["/absolute/path/to/cdli-ai-prototype/dist/index.js"]
+      "args": ["/absolute/path/to/cdli-mcp-server/dist/index.js"]
     }
   }
 }
 ```
 
-**Example: full config with existing preferences:**
+On Windows, use escaped backslashes:
 
 ```json
 {
-  "preferences": {
-    "coworkWebSearchEnabled": true,
-    "sidebarMode": "chat"
-  },
   "mcpServers": {
     "cdli": {
       "command": "node",
-      "args": ["/absolute/path/to/cdli-ai-prototype/dist/index.js"]
+      "args": ["C:\\Users\\name\\cdli-mcp-server\\dist\\index.js"]
     }
   }
 }
 ```
 
-> **Important:** Use the **absolute path** to `dist/index.js`. Replace `/absolute/path/to/cdli-ai-prototype` with your actual clone path. (On Windows, remember to double-escape backslashes, e.g., `C:\\Users\\name\\cdli-ai-prototype\\dist\\index.js`)
+After changing the config, fully quit and reopen Claude Desktop. The CDLI tools should appear in the tool list.
 
-> **If Node.js isn't found:** Replace `"command": "node"` with the full path:
-> `"command": "C:\\Program Files\\nodejs\\node.exe"`
+## Tools
 
-### Step 4: Restart Claude Desktop
+| Tool | What it does |
+| --- | --- |
+| `search_artifacts` | Searches the CDLI catalog with a free-text query. |
+| `advanced_search` | Searches with structured fields such as period, language, genre, material, provenience, and translation text. |
+| `get_artifact` | Fetches full metadata for one artifact by numeric P-number. |
+| `list_artifacts` | Browses artifact result pages and returns a bounded list. |
+| `get_inscription` | Fetches ATF transliteration and English translation lines where available. |
+| `get_authors` | Lists CDLI authors and scholars. |
+| `get_publications` | Lists publications referenced by CDLI records. |
+| `get_periods` | Lists historical periods used by CDLI. |
+| `get_proveniences` | Lists archaeological proveniences. |
+| `cqp_query` | Sends a CQP query to the CDLI CQP4RDF endpoint. |
+| `ping` | Confirms the MCP server is running. |
 
-**Completely quit** Claude Desktop (right-click the system tray icon → Quit), then reopen it.
+## How Requests Flow
 
-### Step 5: Verify
+1. The MCP client receives a user request.
+2. The client chooses one of the registered CDLI tools.
+3. `src/index.ts` receives the MCP tool call through stdio or SSE.
+4. The tool handler validates the input with a Zod schema.
+5. The handler calls `src/cdli-client.ts`.
+6. The client builds the correct CDLI URL and sends the HTTP request.
+7. The response is parsed and formatted as plain text.
+8. The MCP client receives that text and can use it in its answer.
 
-Look for the **🔧 hammer icon** next to the text input. Click it to see the 11 CDLI tools listed.
+For example, a request for Sumerian Ur III administrative tablets can map to `advanced_search` with fields such as `language`, `period`, and `genre`.
 
-### Step 6: Usage Examples
+## CDLI Search Notes
 
-Here are some example prompts that can be used with an MCP client (such as Claude Desktop):
+CDLI search currently works through the public `/search` route. This project maps tool inputs to the same field names used by the live CDLI search forms:
 
-| Example Prompt | Tool Executed |
-|--------|-----------|
-| *"Search CDLI for Sumerian administrative tablets about barley"* | `search_artifacts` |
-| *"Find Old Babylonian literary texts from Nippur"* | `advanced_search` |
-| *"Get the full metadata for artifact P254876"* | `get_artifact` |
-| *"Show me the inscription and translation for P254876"* | `get_inscription` |
-| *"What historical periods are in CDLI?"* | `get_periods` |
-| *"Find all occurrences of the lemma 'lugal' (king)"* | `cqp_query` |
-| *"List publications in the CDLI database"* | `get_publications` |
-| *"What archaeological sites are recorded in CDLI?"* | `get_proveniences` |
+- Free-text search uses `simple-value[]` and `simple-field[]=keyword`.
+- Translation text uses `atf_translation_text`.
+- Publication search maps to `publication_designation`.
+- Metadata filters such as `period`, `language`, `genre`, `material`, and `provenience` are passed through as named search fields.
 
----
+The code keeps the URL-building helpers in `src/cdli-client.ts` and covers them with tests in `test/cdli-client.test.mjs`.
 
+## Known Upstream Dependency
 
-
----
-
-## Artifact Citation Standard
-
-All tool outputs include proper CDLI citation format for scholarly traceability:
-
-```
-P254876 — CDLI Literary 000795, ex. 052
-https://cdli.earth/artifacts/254876
-```
-
-This ensures every AI-generated response can be traced back to the original cuneiform artifact in the CDLI database.
-
----
-
-## Project Structure
-
-```
-cdli-ai-prototype/
-├── src/
-│   ├── index.ts                          # Server entry point (stdio transport)
-│   ├── cdli-client.ts                    # HTTP client for cdli.earth REST API
-│   └── tools/
-│       ├── index.ts                      # Tool registry (barrel export)
-│       ├── search-artifacts/index.ts     # Free-text corpus search
-│       ├── advanced-search/index.ts      # Structured field-based search
-│       ├── get-artifact/index.ts         # Single artifact metadata
-│       ├── list-artifacts/index.ts       # Paginated artifact listing
-│       ├── get-inscription/index.ts      # ATF text + translation
-│       ├── get-authors/index.ts          # Author listing
-│       ├── get-publications/index.ts     # Publication listing
-│       ├── get-periods/index.ts          # Historical periods
-│       ├── get-proveniences/index.ts     # Archaeological sites
-│       ├── cqp-query/index.ts            # CQP linguistic queries
-│       └── ping/index.ts                 # Liveness check
-├── dist/                                 # Compiled JavaScript (git-ignored)
-├── package.json
-├── tsconfig.json
-├── .env.example
-├── .gitignore
-└── README.md
-```
-
----
+The `cqp_query` tool depends on CDLI's public CQP4RDF backend. If that backend returns an error, the tool reports the failure instead of crashing the MCP server. This is an upstream availability issue, not a local server failure.
 
 ## Configuration
 
-Optional `.env` file:
+Optional environment variables:
 
 ```env
-CDLI_API_BASE_URL=https://cdli.earth     # API base URL (default: https://cdli.earth)
-CDLI_API_TIMEOUT=30000                    # Request timeout in ms (default: 30000)
+CDLI_API_BASE_URL=https://cdli.earth
+CDLI_API_TIMEOUT=30000
+MCP_SSE_PORT=3000
 ```
-
----
 
 ## Development
 
-### Adding a New Tool
+Build:
 
-1. Create `src/tools/<tool-name>/index.ts`
-2. Export: `name`, `description`, `inputSchema` (Zod shape), `handler`
-3. Import and add to `src/tools/index.ts`
-4. Rebuild: `npm run build`
+```bash
+npm run build
+```
 
-### Tool Template
+Test:
 
-```typescript
+```bash
+npm test
+```
+
+Run with MCP Inspector:
+
+```bash
+npm run inspect
+```
+
+Add a new tool by creating `src/tools/<tool-name>/index.ts`, exporting `name`, `description`, `inputSchema`, and `handler`, then registering it in `src/tools/index.ts`.
+
+Minimal tool shape:
+
+```ts
 import { z } from 'zod';
 
 export const name = 'my_tool';
-export const description = 'What this tool does';
+export const description = 'Short description of the tool.';
 export const inputSchema = {
-  param: z.string().describe('Parameter description'),
+  value: z.string().describe('Input value'),
 };
 
-export async function handler(args: { param: string }): Promise<string> {
-  // Implementation
-  return 'result';
+export async function handler(args: { value: string }): Promise<string> {
+  return args.value;
 }
 ```
 
-### Testing
-
-```bash
-# Build and test with MCP Inspector
-npm run inspect
-
-# Manual build
-npm run build
-
-# Run directly (for debugging)
-npm start
-```
-
----
-
 ## References
 
-- [CDLI — Cuneiform Digital Library Initiative](https://cdli.earth)
-- [CDLI Advanced Search](https://cdli.earth/search/advanced)
-- [CDLI CQP4RDF](https://cdli.earth/cqp4rdf/)
-- [Model Context Protocol](https://modelcontextprotocol.io/)
-- [MCP TypeScript SDK](https://github.com/modelcontextprotocol/typescript-sdk)
-- [MCP — Build a Server (Guide)](https://modelcontextprotocol.io/docs/develop/build-server)
-- [Claude Desktop MCP Integration](https://modelcontextprotocol.io/docs/tools/inspector)
-
-
+- CDLI: https://cdli.earth
+- CDLI search guide: https://cdli.earth/docs/search
+- CDLI REST API guide: https://cdli.earth/docs/api
+- CDLI CQP4RDF: https://cdli.earth/cqp4rdf/
+- Model Context Protocol: https://modelcontextprotocol.io/
+- MCP TypeScript SDK: https://github.com/modelcontextprotocol/typescript-sdk
 
 ## License
 
 MIT
-
----
-
-<p align="center">
-  <strong>GSoC 2026 — CDLI AI Search & MCP Agent Platform</strong><br>
-  <em>Cuneiform Digital Library Initiative</em>
-</p>
